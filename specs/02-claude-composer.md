@@ -12,56 +12,74 @@ repo owns colors; this shape only uses theme tokens).
 
 ## Target look
 
-Claude desktop's composer, translated to terminal cells. Wide pane, empty prompt:
+Claude desktop's composer, translated to terminal cells. The bottom border carries omp's whole
+status bar (the same content the built-in `box` shape puts in its top border: left group, a rule,
+right group). Wide pane, empty prompt, the omp-claude-theme preset (left `model mode status`,
+right `context_pct`):
 
 ```
 ╭────────────────────────────────────────────────────────────────╮
 │  ❯                                                             │
-╰──────────────────────────────────── opus-4.5 · high · 12% ─────╯
+╰─── opus-4.5 · plan ────────────────────────────────────── 12% ─╯
 ```
 
-Two lines typed, status longer than the room:
+Two lines typed, narrow pane (omp drops right-group segments itself when the bar doesn't fit the
+width it is given; the shape truncates with `…` only if it still doesn't fit):
 
 ```
 ╭────────────────────────────────────╮
 │  ❯ refactor the parser so it       │
 │    keeps comments                  │
-╰──────────── opus-4.5 · high · 1… ──╯
+╰─── opus-4.5 · plan ────────────────╯
 ```
 
-- Corners and rules: the theme's rounded box glyphs (`cx.box`), colored with `cx.border(...)` so
-  omp's state coloring (focus, bash mode, plan mode) still shows on the border.
-- Status chip: the composer's status content, right-aligned in the bottom border, one border cell
-  after it, one space on each side. Whatever segments the person configured appear there
-  (`statusLine.*` settings decide; the omp-claude-theme preset makes it model · mode · context).
-- Gutter `❯ ` on the first row, blanks under it on later rows.
-- Padding: 2 cells inside each side border (`paddingX: 2`).
+- Corners and rules: the theme's rounded box glyphs (`ctx.box`), colored with
+  `ctx.borderColor(...)` so omp's state coloring (focus, bash mode, plan mode) still shows on the
+  border.
+- Status: omp's status content (`statusAttachment: "top-border"`), right-aligned in the bottom
+  border with one border cell after it, truncated with `…` when longer than the room. omp pads each
+  segment group with a space on both sides, so the shape adds no spaces of its own (the built-in
+  `box` top border doesn't either). Whatever segments the person configured appear there
+  (`statusLine.*` settings decide). Decided 2026-11-24 (Tim) over a right-group-only chip
+  (`top-rule-chip` drops the left group, which holds the model in the preset) and over collapsing
+  omp's rule between the groups (depends on undocumented bar internals).
+- Gutter `❯ ` on the first row, blanks under it on later rows (omp supplies both from
+  `defaultPromptGutter`).
+- Padding: 2 cells inside each side border (`defaultPaddingX` → 2).
 - No status band above, no status bar below (`bottomBar: "none"`).
 
 A second, filled variant, `claude-desktop-filled`, paints the rows with the composer surface
-(`filled: true`). Register both. The surface color comes from the theme's `userMessageBg`
-(omp's `ui/styles/composer/frame.ts`), which in the Claude themes is the user-bubble color, not
-Claude's composer card color; that's why the outline variant is the default.
+(`filledSurface: true`, rows wrapped in `ctx.surfaceColor`). Register both. The surface color comes
+from the theme's `userMessageBg`, which in the Claude themes is the user-bubble color, not Claude's
+composer card color; that's why the outline variant is the default.
 
-## API (omp main, v19.1.1; confirm at the installed tag)
+## API (checked at the installed tag, omp v19.1.1)
 
-- `pi.registerComposerShape(shape: ComposerShape & { label: string })` in the factory
-  (`docs/extensions.md` "Composer shape renderer").
-- `ComposerShape` fields: `id`, `label`, `description`, `statusAttachment?`
-  (`"top-border" | "top-band" | "top-rule-chip"`), `bottomBar?` (`"full" | "left" | "none"`),
-  `bottomBarGap?`, `filled?`, `sideBorders`, `gutter?`, `paddingX`, `sideWidth(paddingX)`,
-  `top?(cx)`, `row(cx)`, `bottom?(cx)`.
-- Chrome context: `width`, `paddingX`, `theme`, `border(t)`, `accent(t)`, `surface(t)`, `box`
-  (`topLeft`, `topRight`, `bottomLeft`, `bottomRight`, `horizontal`, `vertical`), `status?`
-  (`{ content, width }`, already styled).
-- Row context adds `text` (styled, caret included), `pad`, `gutter`, `first`, `last`, `overflow`
-  (cells an end-of-row caret took from the right padding).
-- Hard rule: every row a shape returns is exactly `width` visible cells.
-- Reference implementation to copy from: the built-in `box` shape in
-  `packages/coding-agent/src/ui/styles/composer/shapes.ts` (its `rightCells(cx)` handles the
-  caret overflow; reuse that logic, it's not exported).
-- Width helpers: `truncate` and `visibleWidth` from `@oh-my-pi/pi-tui/text/width` (named in the
-  extension docs' migration table as the supported path).
+The spec was first written against an API shape (`ComposerShape`, `row(cx)`, `cx.status`) that
+omp v19.1.1 doesn't have. At the tag the same capability is named differently:
+
+- `pi.registerComposerShape({ label, description?, style })` in the factory
+  (`docs/extensions.md` "Composer shape renderer"; type `ComposerShapeDefinition`, re-exported from
+  the `@oh-my-pi/pi-coding-agent` root). `style.id` is the persisted `composer.shape` value.
+- `style: ComposerStyle` (exported from the `@oh-my-pi/pi-tui` root): `id`, `filledSurface?`,
+  `sideBorders`, `verticalChrome` (`0 | 1 | 2`), `statusAttachment`
+  (`"top-border" | "top-band" | "top-rule-chip" | "none"`), `bottomBar` (`"none" | "left" | "full"`),
+  `bottomBarGap`, `defaultPromptGutter`, `defaultPaddingX(themePaddingX)`,
+  `sideChromeWidth(paddingX)`, `renderTop(ctx)`, `renderRow(ctx)` (returns `string[]`),
+  `renderBottom(ctx)`.
+- Chrome context (`ComposerChromeContext`): `width`, `paddingX`, `borderColor(s)`,
+  `accentColor(s)`, `surfaceColor(s)`, `box` (`topLeft`, `topRight`, `bottomLeft`, `bottomRight`,
+  `horizontal`, `vertical`), `topBorder?` (`{ content, width }`, already styled).
+- Row context (`ComposerRowContext`) adds `text` (styled, caret included), `pad`, `gutter`,
+  `isLastRow`, `cursorOverflow` (cells an end-of-row caret took from the right chrome),
+  `imeSafeCursorTail` (emit no right chrome after the caret), `scrollbarThumb`.
+- Hard rule: every normal row a shape returns is exactly `width` visible cells (the IME-safe row
+  is the documented exception).
+- Reference implementation: the built-in `box` style in
+  `packages/tui/src/components/composer/box.ts` (its `rightChromeCells` handles caret overflow);
+  filled reference: `field.ts`.
+- Width helpers: `truncateToWidth`, `visibleWidth` and `padding` from the `@oh-my-pi/pi-tui` root
+  (`@oh-my-pi/pi-tui/text/width` doesn't exist at the tag).
 
 ## Open questions (spike first)
 
@@ -82,10 +100,11 @@ Claude's composer card color; that's why the outline variant is the default.
   width helpers) so tests can drive it.
 - `plugin/src/composer/index.ts`: the factory registering both shapes with labels
   "Claude Desktop" and "Claude Desktop (filled)" and one-line descriptions.
-- `plugin/test/composer.test.ts` with a fake context (identity `border`/`surface`/`accent`, plain
-  box glyphs, `visibleWidth` from the real helper):
-  - every row of `top`/`row`/`bottom` is exactly `width` cells for widths 12, 20, 40, 80, 200;
-  - status shorter than the room: chip right-aligned with one border cell after it;
+- `plugin/test/composer.test.ts` with a fake context (identity `borderColor`/`surfaceColor`/
+  `accentColor`, plain box glyphs, `visibleWidth` from the real helper):
+  - every row of `renderTop`/`renderRow`/`renderBottom` is exactly `width` cells for widths 12,
+    20, 40, 80, 200;
+  - status shorter than the room: right-aligned with one border cell after it;
   - status longer than the room: truncated with `…`, still `width` cells, border corners intact;
   - no status: a plain bottom rule;
   - caret overflow 0 and 1 on the last row and a middle row;
@@ -115,4 +134,31 @@ throwaway agent dir with no extension errors.
 
 ## Findings
 
-(Fill in while working: answers to the open questions, with the omp version they were checked on.)
+Checked on omp 19.1.1 (tag `v19.1.1`, commit 31ffee5), 2026-11-24, with a throwaway extension
+registering two spike styles and logging every `ctx.topBorder` to a file, run in a Herdr tab
+with a copied config (`PI_CODING_AGENT_DIR=<tmp>`).
+
+- **API at the tag differs from the one this spec was drafted against** (see "API" above, now
+  rewritten). The capability is all there; only names and the registration shape changed.
+- **Q1: yes.** The editor builds one `ComposerChromeContext` per frame and passes the same
+  object, `topBorder` included, to `renderTop`, every `renderRow` and `renderBottom`
+  (`packages/tui/src/components/editor.ts` `render()`); the settings preview does the same
+  (`overlays/composer-shape-preview.ts`). Logged at 160 columns: `renderBottom` got
+  `{ width: 154 }`, identical to `renderTop`.
+  What the content *is* depends on `statusAttachment`, which changed the design:
+  - `"top-border"`: the whole bar (left group, a rule, right group, each group a padded chip on
+    `statusLineBg`), laid out by omp to exactly the width it's offered,
+    `width - 2 * sideChromeWidth(paddingX)`.
+  - `"top-rule-chip"`: the right group only, as one compact chip (12 cells for `◫ 8.3K/? ⟲`).
+    The left group then shows only on a bar below the editor (`bottomBar: "left"`) or nowhere.
+  - With the omp-claude-theme preset (left `model mode status`, right `context_pct`), the chip
+    variant would show only the context figure. Tim chose the whole bar (`"top-border"`).
+- **Q2: no double status.** With `statusAttachment: "top-border"` and `bottomBar: "none"`
+  nothing renders above or below the card; the status line's standalone bar is off
+  (`StatusLineComponent.setComposerStyle`: `bottomBar: "none"` → no standalone bar).
+- **Q3: Tern doesn't use composer shapes.** On a TSP terminal (Tern) omp sends a native
+  `editor` node and the terminal draws the composer itself; `ComposerShapePreview.describe()`
+  says so ("A TSP terminal draws the composer itself, so the shape's glyph chrome has no native
+  twin"). No work needed.
+- Extensions import `@oh-my-pi/pi-tui` root values (`visibleWidth`) with no `node_modules`
+  next to them: the compiled omp resolves the specifier to its bundled copy.
