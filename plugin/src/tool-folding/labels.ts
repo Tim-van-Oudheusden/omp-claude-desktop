@@ -104,10 +104,15 @@ function firstLine(text: string): string {
 
 export class Labeler {
 	readonly #homes: readonly string[];
+	/** Each home spelling where it starts a path inside free text (a command). */
+	readonly #homesInText: readonly RegExp[];
 
 	/** `homes`: the home directory's spellings, longest first (real path before `$HOME`). */
 	constructor(homes: readonly string[]) {
 		this.#homes = homes;
+		this.#homesInText = homes.map(
+			home => new RegExp(`(?<![\\w/.-])${home.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=/|[\\s;'"&|)]|$)`, "g"),
+		);
 	}
 
 	/** How `block` is drawn in `mode`. */
@@ -170,8 +175,11 @@ export class Labeler {
 				const spans = [tense("Looked up ", "Looking up "), { t: action }];
 				return file && file !== "*" ? [...spans, verb(" in "), path(this.#shownPath(file))] : spans;
 			}
-			case "bash":
-				return [tense("Ran ", "Running "), code(clip(firstLine(str(field(args, "command")) ?? ""), COMMAND_CELLS))];
+			case "bash": {
+				const command = firstLine(str(field(args, "command")) ?? "");
+				const shown = this.#homesInText.reduce((text, home) => text.replace(home, "~"), command);
+				return [tense("Ran ", "Running "), code(clip(shown, COMMAND_CELLS))];
+			}
 			case "eval": {
 				const language = str(field(args, "language"));
 				const title = str(field(args, "title"));

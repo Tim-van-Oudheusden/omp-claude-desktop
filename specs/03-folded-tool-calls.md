@@ -214,3 +214,31 @@ position or a group.
   pattern.
 - `/fold all` edit counts come from `details.diff` and are styled with the semantic `ins`/`del`
   tokens; writes show no count (their result has none).
+
+### M3 (omp 19.1.1, Herdr 0.1.18, 2026-11-25)
+
+Loaded with `omp -e plugin/src/tool-folding/index.ts` in a throwaway agent dir with presenters
+on, resuming a copy of a pindu-launcher session (no model calls). Screens:
+`docs/screens/folding-{dark,light}-{before,after}.png` (before is `/fold off`),
+`folding-dark-all.png` (`/fold all`) and `folding-dark-expanded.png` (`Ctrl+O`).
+
+- Folded rows pack together under the user's message, between full `ask` cards and failed
+  `bash` cards, as intended. omp prefixes each compact row with `•`.
+- Commands under home first showed `cd /var/home/tim/Git/…`; labels now write home as `~`
+  inside commands too (only where a path starts, so `/home/timothy` stays).
+- **`Ctrl+O` is omp's global "Tool output expansion" toggle**, not per block. New blocks draw in
+  full at once; blocks already in terminal scrollback redraw in full at the next transcript
+  rebuild (a `/fold` change, the setting toggled). That's omp's scrollback behavior, not the
+  presenter's.
+- omp's own full cards already title themselves with `args.i` ("Locating the Get Games spec").
+- `write` calls to `agent://Name` are messages to subagents; they stay full in `tools` mode and
+  fold to "Wrote agent://Name" in `all` mode.
+- The `settings` root import is the live instance: the session-start notice appears with
+  presenters off and not with them on.
+- No `transcript_presenter` failure was reported on screen or in `~/.omp/logs`.
+- Live vs resumed: not compared in a live run (that needs model calls, opt-in per AGENTS.md).
+  Answers are a pure function of the block and the mode, and the tests check repeated asks give
+  identical answers; the only live-only input is `isPartial`, which switches running labels to
+  finished ones as the call ends.
+- Light shots: GNOME color scheme flipped to light for about a minute and back (Tim's OK from
+  spec 02), `theme.light: claude-desktop-light` in the copied config.

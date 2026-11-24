@@ -135,6 +135,13 @@ describe("labels", () => {
 		expect(show(call("read", { path: "/home/timothy/a.ts" }))).toBe("Read /home/timothy/a.ts");
 	});
 
+	test("commands show home as ~ too, without touching look-alike paths", () => {
+		expect(show(call("bash", { command: "cd /var/home/tim/Git/app; ls /home/tim" }))).toBe("Ran cd ~/Git/app; ls ~");
+		expect(show(call("bash", { command: "ls /home/timothy /srv/var/home/tim/x" }))).toBe(
+			"Ran ls /home/timothy /srv/var/home/tim/x",
+		);
+	});
+
 	test("a long path keeps its file name; a long command keeps its start", () => {
 		const deep = `/srv/${"very-long-directory/".repeat(6)}parser.ts`;
 		const read = show(call("read", { path: deep }))!;
