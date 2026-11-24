@@ -135,7 +135,8 @@ Accept: fixture committed, Findings filled, the label table above corrected wher
 
 ### M2: presenter, unit-tested
 
-- `plugin/src/tool-folding/labels.ts`: pure `labelFor(block, mode)` → presentation.
+- `plugin/src/tool-folding/labels.ts`: pure `new Labeler(homes).present(block, mode)` →
+  presentation (the home spellings are passed in so tests don't depend on the machine).
 - `plugin/src/tool-folding/index.ts`: factory registering the presenter, the `/fold` command and
   the session-start notice.
 - `plugin/test/folding.test.ts`, driven by `fixtures/blocks.jsonl` plus hand-written edge cases:
@@ -204,3 +205,12 @@ position or a group.
 - **Home directory.** On this Fedora Atomic machine `$HOME` is `/home/tim` but paths read
   `/var/home/tim` (the real path). Shortening to `~` must try the real path first, or
   `/var/home/tim/x` becomes `/var~/x`.
+
+### M2 (2026-11-25)
+
+- Labels never exceed 80 cells: commands stop at 60, patterns and queries at 40, paths at 60 with
+  the start cut (`…/src/parser.ts`) so the file name stays; whatever still crosses 80 is cut at
+  the end. A search over a long multi-path list therefore loses the end of the list, not the
+  pattern.
+- `/fold all` edit counts come from `details.diff` and are styled with the semantic `ins`/`del`
+  tokens; writes show no count (their result has none).

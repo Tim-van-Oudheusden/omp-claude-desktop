@@ -6,23 +6,13 @@
  * A line holds the block's shape: args with values shortened, the result's content types and
  * detail keys. The home directory becomes `~` as lines are written.
  */
-import { appendFileSync, realpathSync } from "node:fs";
-import { homedir } from "node:os";
+import { appendFileSync } from "node:fs";
 import type { TranscriptBlock, TranscriptPresenter } from "@oh-my-pi/pi-coding-agent";
+import { homeSpellings } from "./labels";
 
 const MAX_STRING = 160;
 const MAX_ITEMS = 3;
 const MAX_DEPTH = 4;
-
-/** The home directory as written in paths, longest spelling first (`/var/home/x` before `/home/x`). */
-function homeSpellings(): string[] {
-	const home = homedir();
-	let real = home;
-	try {
-		real = realpathSync(home);
-	} catch {}
-	return [...new Set([real, home])].sort((a, b) => b.length - a.length);
-}
 
 /** `value` reduced to its shape: strings shortened, arrays cut to a few items, depth bounded. */
 function summarize(value: unknown, homes: readonly string[], depth = 0): unknown {
