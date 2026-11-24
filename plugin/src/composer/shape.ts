@@ -3,10 +3,10 @@
  * omp's status bar right-aligned in the bottom border.
  *
  * ```
- * ╭──────────────────────────────────────────╮
- * │  ❯ refactor the parser so it             │
- * │    keeps comments                        │
- * ╰─── opus-4.5 · plan ──────────────── 12% ─╯
+ * ╭────────────────────────────────────────╮
+ * │  refactor the parser so it keeps       │
+ * │  comments                              │
+ * ╰─── opus-4.5 · plan ────────────── 12% ─╯
  * ```
  *
  * Pure: no omp state, only the `@oh-my-pi/pi-tui` width helpers, so tests can drive it.
@@ -48,7 +48,8 @@ function renderBottomBorder(ctx: ComposerChromeContext): string {
 }
 
 /**
- * One content row: `│`, padding, gutter, text, padding, `│`. An end-of-line caret that spills
+ * One content row: `│`, padding, gutter (omp passes none to side-bordered shapes), text,
+ * padding, `│`. An end-of-line caret that spills
  * past the text takes cells from the right padding, never the border (omp's `box` rule).
  */
 function renderContentRow(ctx: ComposerRowContext, filled: boolean): string[] {
@@ -74,7 +75,8 @@ function claudeDesktopStyle(id: string, filled: boolean): ComposerStyle {
 		statusAttachment: "top-border",
 		bottomBar: "none",
 		bottomBarGap: false,
-		defaultPromptGutter: "❯ ",
+		// omp gives side-bordered shapes no prompt gutter (`Editor.#getEffectivePromptGutter`).
+		defaultPromptGutter: undefined,
 		defaultPaddingX: () => PADDING_X,
 		sideChromeWidth: paddingX => paddingX + 1,
 		renderTop: ({ box, width, borderColor }) =>

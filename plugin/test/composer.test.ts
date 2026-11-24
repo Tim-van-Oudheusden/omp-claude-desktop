@@ -37,9 +37,9 @@ function status(text: string): EditorTopBorder {
 }
 
 /**
- * Draw a whole composer the way omp's editor feeds a style: gutter on row one, blanks under it,
- * text padded to the content width. A line ending in the caret may be one cell wider than the
- * content; that cell comes out of the right padding (`cursorOverflow`).
+ * Draw a whole composer the way omp's editor feeds a side-bordered style: no gutter, text padded
+ * to the content width. A line ending in the caret may be one cell wider than the content; that
+ * cell comes out of the right padding (`cursorOverflow`).
  */
 function frame(
 	style: ComposerStyle,
@@ -48,8 +48,7 @@ function frame(
 	opts: { status?: EditorTopBorder; caretOverflowRow?: number; ctx?: Partial<ComposerChromeContext> } = {},
 ): string[] {
 	const ctx = chrome(width, opts.status, opts.ctx);
-	const gutter = style.defaultPromptGutter ?? "";
-	const contentWidth = width - 2 * style.sideChromeWidth(ctx.paddingX) - visibleWidth(gutter);
+	const contentWidth = width - 2 * style.sideChromeWidth(ctx.paddingX);
 	const rows: string[] = [];
 	const top = style.renderTop(ctx);
 	if (top !== undefined) rows.push(top);
@@ -59,7 +58,7 @@ function frame(
 			...ctx,
 			text,
 			pad: " ".repeat(Math.max(0, contentWidth - visibleWidth(text))),
-			gutter: i === 0 ? gutter : " ".repeat(visibleWidth(gutter)),
+			gutter: "",
 			isLastRow: i === lines.length - 1,
 			cursorOverflow: overflow,
 			imeSafeCursorTail: false,
@@ -73,15 +72,15 @@ function frame(
 }
 
 describe("Claude Desktop composer", () => {
-	test("draws the card from the spec: rounded border, ❯ gutter, status bottom right", () => {
+	test("draws the card from the spec: rounded border, roomy padding, status bottom right", () => {
 		// omp lays the status out to width - 2 * sideChromeWidth = 32 cells.
 		const rows = frame(claudeDesktopShape, 38, ["refactor the parser so it", "keeps comments"], {
 			status: status(` opus-4.5 · plan ${"─".repeat(10)} 12% `),
 		});
 		expect(rows).toEqual([
 			"╭────────────────────────────────────╮",
-			"│  ❯ refactor the parser so it       │",
-			"│    keeps comments                  │",
+			"│  refactor the parser so it         │",
+			"│  keeps comments                    │",
 			"╰─── opus-4.5 · plan ────────── 12% ─╯",
 		]);
 	});
@@ -94,7 +93,7 @@ describe("Claude Desktop composer", () => {
 					frame(style, width, ["hi"]),
 					frame(style, width, ["hi"], { status: status(" opus · plan ") }),
 					frame(style, width, ["hi"], { status: status(` ${"x".repeat(Math.max(1, room - 2))} `) }),
-					frame(style, width, ["one", "two", "thr"], { status: status(` ${"y".repeat(width * 2)} `) }),
+					frame(style, width, ["one", "two", "three"], { status: status(` ${"y".repeat(width * 2)} `) }),
 				];
 				for (const rows of cases) {
 					for (const row of rows) expect({ width, row, cells: visibleWidth(row) }).toEqual({ width, row, cells: width });
@@ -138,27 +137,25 @@ describe("Claude Desktop composer", () => {
 	});
 
 	test("an end-of-line caret takes a padding cell, not the border, on the last and a middle row", () => {
-		// Content width at 20 columns: 20 - 2 * 3 - 2 (gutter) = 12.
-		const full = "abcdefghijkl";
-		const caret = `${full}█`;
+		// Content width at 20 columns: 20 - 2 * 3 = 14.
+		const caret = `${"abcdefghijklmn"}█`;
 		for (const row of [0, 1]) {
 			const lines = row === 0 ? [caret, "next"] : ["first", caret];
 			const rows = frame(claudeDesktopShape, 20, lines, { caretOverflowRow: row });
 			for (const r of rows) expect(visibleWidth(r)).toBe(20);
-			const prefix = row === 0 ? "❯ " : "  ";
-			expect(rows[1 + row]).toBe(`│  ${prefix}${caret} │`);
+			expect(rows[1 + row]).toBe(`│  ${caret} │`);
 		}
 		// No overflow: the caret fits inside the text and both padding cells stay.
 		const rows = frame(claudeDesktopShape, 20, ["abc█"], { caretOverflowRow: 0 });
-		expect(rows[1]).toBe(`│  ❯ abc█${" ".repeat(8)}  │`);
+		expect(rows[1]).toBe(`│  abc█${" ".repeat(10)}  │`);
 	});
 
-	test("multi-row input shows the gutter on row one only", () => {
+	test("wrapped rows line up under the first, with no prompt glyph", () => {
 		const rows = frame(claudeDesktopShape, 24, ["one", "two", "three"]);
 		expect(rows.slice(1, 4)).toEqual([
-			"│  ❯ one               │",
-			"│    two               │",
-			"│    three             │",
+			"│  one                 │",
+			"│  two                 │",
+			"│  three               │",
 		]);
 	});
 
@@ -167,7 +164,7 @@ describe("Claude Desktop composer", () => {
 		const rows = frame(claudeDesktopShape, 30, [text]);
 		expect(rows[1].length).toBeGreaterThan(30);
 		expect(visibleWidth(rows[1])).toBe(30);
-		expect(plain(rows[1])).toBe(`│  ❯ bold red${" ".repeat(14)}  │`);
+		expect(plain(rows[1])).toBe(`│  bold red${" ".repeat(16)}  │`);
 	});
 
 	test("the border takes omp's state color; text and status keep their own", () => {
@@ -175,7 +172,7 @@ describe("Claude Desktop composer", () => {
 		const rows = frame(claudeDesktopShape, 16, ["hi"], { status: status(" m "), ctx: { borderColor: red } });
 		expect(rows).toEqual([
 			`<╭${"─".repeat(14)}╮>`,
-			"<│>  ❯ hi        <│>",
+			"<│>  hi          <│>",
 			`<╰${"─".repeat(10)}> m <─╯>`,
 		]);
 	});
@@ -183,38 +180,36 @@ describe("Claude Desktop composer", () => {
 	test("filled variant paints the inside of each row, not the border", () => {
 		const surface = (s: string) => `\x1b[48;5;236m${s}\x1b[49m`;
 		const rows = frame(claudeDesktopFilledShape, 16, ["hi"], { ctx: { surfaceColor: surface } });
-		expect(rows[1]).toBe(`│${surface("  ❯ hi        ")}│`);
+		expect(rows[1]).toBe(`│${surface("  hi          ")}│`);
 		// The outline variant leaves the inside alone.
-		expect(frame(claudeDesktopShape, 16, ["hi"], { ctx: { surfaceColor: surface } })[1]).toBe("│  ❯ hi        │");
+		expect(frame(claudeDesktopShape, 16, ["hi"], { ctx: { surfaceColor: surface } })[1]).toBe("│  hi          │");
 	});
 
 	test("IME-safe caret row ends at the caret; the bottom border stays separate", () => {
-		const ctx = chrome(16);
 		const rows = claudeDesktopShape.renderRow({
-			...ctx,
+			...chrome(16),
 			text: "hi█",
 			pad: "",
-			gutter: "❯ ",
+			gutter: "",
 			isLastRow: true,
 			cursorOverflow: 0,
 			imeSafeCursorTail: true,
 			scrollbarThumb: false,
 		});
-		expect(rows).toEqual(["│  ❯ hi█"]);
+		expect(rows).toEqual(["│  hi█"]);
 	});
 
 	test("scrollbar thumb replaces the right border on its rows", () => {
-		const ctx = chrome(12);
 		const [row] = claudeDesktopShape.renderRow({
-			...ctx,
+			...chrome(12),
 			text: "x",
-			pad: "   ",
-			gutter: "❯ ",
+			pad: "     ",
+			gutter: "",
 			isLastRow: false,
 			cursorOverflow: 0,
 			imeSafeCursorTail: false,
 			scrollbarThumb: true,
 		});
-		expect(row).toBe("│  ❯ x     █");
+		expect(row).toBe("│  x       █");
 	});
 });

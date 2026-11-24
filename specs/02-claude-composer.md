@@ -19,7 +19,7 @@ right `context_pct`):
 
 ```
 ╭────────────────────────────────────────────────────────────────╮
-│  ❯                                                             │
+│                                                                │
 ╰─── opus-4.5 · plan ────────────────────────────────────── 12% ─╯
 ```
 
@@ -28,8 +28,8 @@ width it is given; the shape truncates with `…` only if it still doesn't fit):
 
 ```
 ╭────────────────────────────────────╮
-│  ❯ refactor the parser so it       │
-│    keeps comments                  │
+│  refactor the parser so it keeps   │
+│  comments                          │
 ╰─── opus-4.5 · plan ────────────────╯
 ```
 
@@ -43,8 +43,8 @@ width it is given; the shape truncates with `…` only if it still doesn't fit):
   (`statusLine.*` settings decide). Decided 2026-11-24 (Tim) over a right-group-only chip
   (`top-rule-chip` drops the left group, which holds the model in the preset) and over collapsing
   omp's rule between the groups (depends on undocumented bar internals).
-- Gutter `❯ ` on the first row, blanks under it on later rows (omp supplies both from
-  `defaultPromptGutter`).
+- No prompt glyph: omp gives side-bordered shapes no gutter (see Findings), and Claude desktop's
+  composer has none either. Wrapped rows line up under the first.
 - Padding: 2 cells inside each side border (`defaultPaddingX` → 2).
 - No status band above, no status bar below (`bottomBar: "none"`).
 
@@ -108,7 +108,7 @@ omp v19.1.1 doesn't have. At the tag the same capability is named differently:
   - status longer than the room: truncated with `…`, still `width` cells, border corners intact;
   - no status: a plain bottom rule;
   - caret overflow 0 and 1 on the last row and a middle row;
-  - multi-row input: gutter only on row one, blanks after;
+  - multi-row input: wrapped rows line up under the first;
   - a styled `text` (ANSI escapes) measures by visible cells, not string length.
 
 Accept: `bun test` green.
@@ -162,3 +162,33 @@ with a copied config (`PI_CODING_AGENT_DIR=<tmp>`).
   twin"). No work needed.
 - Extensions import `@oh-my-pi/pi-tui` root values (`visibleWidth`) with no `node_modules`
   next to them: the compiled omp resolves the specifier to its bundled copy.
+- **The `❯ ` gutter isn't possible on a side-bordered shape.** `Editor.#getEffectivePromptGutter()`
+  returns nothing when `style.sideBorders` is true ("The box frame never renders a gutter"), so
+  `defaultPromptGutter` is ignored and `ctx.gutter` is always `""`. Alternatives were drawing the
+  glyph in the shape (needs a per-frame row counter, because the row context has no "first row"
+  flag, and symmetric side chrome makes the right padding 4 cells) or `sideBorders: false` (loses
+  the caret reserve, the IME-safe layout and the scrollbar). Tim chose no gutter (2026-11-25).
+- **M2 in omp 19.1.1 (2026-11-25)**, Herdr 0.1.18, copied config with `composer.shape:
+  claude-desktop`, `--model anthropic/claude-opus-5-5` (no credentials, no model calls).
+  Screens: `docs/screens/composer-{dark,light}-{wide,bash,plan,narrow,filled}.png`,
+  `composer-dark-empty.png` and `composer-dark-selector.png` (the plan shots are empty prompts
+  too).
+  - Both shapes appear in Appearance → Composer Shape with their labels and live preview;
+    picking one rewrites `composer.shape` and every omp sharing that config redraws.
+  - Widths checked live: 20, 40, 113 and 160 columns. No row wraps or overflows. At 20 columns
+    omp drops the right group and the left group still fits (`╰─── ◒ Opus 5.5 ───╯`).
+  - Bash mode (`!`) turns the whole frame green. Plan mode shows as the `Plan` status segment
+    only: omp's `updateEditorBorderColor` has no plan-mode branch, so no shape recolors for it.
+  - The rule *between* the two status groups belongs to the status content and keeps the
+    status line's color, so in bash mode that stretch of the bottom border stays gray while the
+    rest turns green. The built-in `box` top border behaves the same; fixing it would mean
+    rewriting omp's status content (the option Tim turned down).
+  - Light: Herdr follows the GNOME color scheme and omp reads the background over OSC 11 (which
+    beats `COLORFGBG`), so the light shots were taken by switching
+    `org.gnome.desktop.interface color-scheme` to `default` for a minute (with Tim's OK) and
+    adding `theme.light: claude-desktop-light` to the copied config. omp switched themes live.
+  - Driving it: `hc keys` has no key name for `!`; typed it through `hc attach` from a pty sized
+    to the terminal. `ctrl+j` inserts a newline. Plan mode toggles with `alt+shift+p`.
+  - No Claude desktop screenshot was available to compare against, so the comparison is against
+    this spec's target. The card and status position match. The model sits lower-left because
+    the preset puts it in the left group; Claude desktop puts the model picker lower-right.
