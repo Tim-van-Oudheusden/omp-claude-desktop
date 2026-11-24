@@ -29,7 +29,8 @@ herdr-chat/                extension 1: git submodule of Tim's fork of ChmaraX/h
 docs/versions.md           the omp, Herdr and herdr-chat versions this was built and checked against
 ```
 
-`plugin/` and `herdr-chat/` don't exist yet; the specs say how to create them.
+`plugin/` holds extension 2 so far (`src/tool-folding/` comes with spec 03); `herdr-chat/` doesn't
+exist yet. The specs say how to create them.
 
 ## Before an agent starts (Tim)
 
@@ -44,12 +45,31 @@ docs/versions.md           the omp, Herdr and herdr-chat versions this was built
 ## Install (once built)
 
 ```sh
-omp plugin link ./plugin                                  # extensions 2 and 3 (exact form: omp plugin --help)
+omp plugin link ./plugin                                  # extensions 2 and 3
 omp config set composer.shape claude-desktop              # extension 2
 omp config set extensionRenderers.transcriptPresenters true  # extension 3
 ```
 
 Extension 1 installs the way herdr-chat does (`cd herdr-chat && ./install.sh --app`).
+
+## Claude composer (extension 2)
+
+A rounded card around the prompt with omp's status bar in its bottom border, registered as
+**Appearance → Composer Shape → Claude Desktop**. A **Claude Desktop (filled)** variant paints the
+rows in the theme's composer surface (`userMessageBg`, the user-bubble color in the Claude themes).
+
+![Claude Desktop composer, dark](docs/screens/composer-dark-wide.png)
+
+```sh
+omp config set composer.shape claude-desktop          # or claude-desktop-filled
+omp config set composer.shape band                    # back to omp's default
+```
+
+The status shows whatever `statusLine.*` selects: left group at the lower left, right group at
+the lower right. Bash mode recolors the frame like omp's own shapes. There's no `❯` prompt glyph:
+omp gives framed shapes no gutter. Tern draws its own composer and ignores composer shapes. More
+screens (light, narrow, bash, plan, filled) are in `docs/screens/composer-*.png`; details and
+limits in `specs/02-claude-composer.md` "Findings".
 
 ## Kickoff prompt
 

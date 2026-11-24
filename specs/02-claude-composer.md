@@ -192,3 +192,9 @@ with a copied config (`PI_CODING_AGENT_DIR=<tmp>`).
   - No Claude desktop screenshot was available to compare against, so the comparison is against
     this spec's target. The card and status position match. The model sits lower-left because
     the preset puts it in the left group; Claude desktop puts the model picker lower-right.
+- **M3 (2026-11-25): `omp plugin link ./plugin` is the exact form at 19.1.1.** It symlinks into
+  the *user plugins root* (`~/.omp/plugins/node_modules`), which `PI_CODING_AGENT_DIR` doesn't
+  move. To keep Tim's setup untouched it was run with `HOME=<tmp>` (the whole `~/.omp` tree,
+  plugins included, then lives in the temp dir). omp started from that HOME with no `-e` drew the
+  Claude Desktop card, logged no extension errors and showed no error notice.
+  `omp config set composer.shape claude-desktop` / `band` both validate and stick.

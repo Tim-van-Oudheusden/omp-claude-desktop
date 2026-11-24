@@ -7,6 +7,9 @@
 	"scripts": {
 		"test": "bun test"
 	},
+	"omp": {
+		"extensions": ["./src/composer/index.ts"]
+	},
 	"devDependencies": {
 		"@oh-my-pi/pi-coding-agent": "19.1.1",
 		"@oh-my-pi/pi-tui": "19.1.1"
