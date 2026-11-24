@@ -242,3 +242,10 @@ on, resuming a copy of a pindu-launcher session (no model calls). Screens:
   finished ones as the call ends.
 - Light shots: GNOME color scheme flipped to light for about a minute and back (Tim's OK from
   spec 02), `theme.light: claude-desktop-light` in the copied config.
+
+### M4 (2026-11-25)
+
+- `plugin/package.json` lists both extensions. `omp plugin link ./plugin` in a throwaway `HOME`
+  (see spec 02 for why `HOME`), presenters on, resuming the same session copy with no `-e`: the
+  Claude Desktop composer and 139 folded `Ran` rows drew, with no extension error on screen or in
+  the logs.

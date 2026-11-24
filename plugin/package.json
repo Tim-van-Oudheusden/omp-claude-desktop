@@ -8,7 +8,7 @@
 		"test": "bun test"
 	},
 	"omp": {
-		"extensions": ["./src/composer/index.ts"]
+		"extensions": ["./src/composer/index.ts", "./src/tool-folding/index.ts"]
 	},
 	"devDependencies": {
 		"@oh-my-pi/pi-coding-agent": "19.1.1",

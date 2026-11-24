@@ -29,8 +29,8 @@ herdr-chat/                extension 1: git submodule of Tim's fork of ChmaraX/h
 docs/versions.md           the omp, Herdr and herdr-chat versions this was built and checked against
 ```
 
-`plugin/` holds extension 2 so far (`src/tool-folding/` comes with spec 03); `herdr-chat/` doesn't
-exist yet. The specs say how to create them.
+`plugin/` holds extensions 2 and 3; `herdr-chat/` doesn't exist yet. The specs say how to create
+it.
 
 ## Before an agent starts (Tim)
 
@@ -70,6 +70,31 @@ the lower right. Bash mode recolors the frame like omp's own shapes. There's no 
 omp gives framed shapes no gutter. Tern draws its own composer and ignores composer shapes. More
 screens (light, narrow, bash, plan, filled) are in `docs/screens/composer-*.png`; details and
 limits in `specs/02-claude-composer.md` "Findings".
+
+## Folded tool calls (extension 3)
+
+Finished reads, searches and commands shrink to one quiet row each ("Read src/parser.ts",
+"Ran `npm test`", "Waited for CI"). Failed calls, `ask` questions and, by default, edits and
+writes stay full. Display only: the session, `/export` and the model's context are unchanged.
+
+| Before (`/fold off`) | After (`/fold tools`) |
+|---|---|
+| ![omp's own tool cards](docs/screens/folding-dark-before.png) | ![folded tool calls](docs/screens/folding-dark-after.png) |
+
+It needs omp's opt-in transcript presenters; without them it says so once per session:
+
+```sh
+omp config set extensionRenderers.transcriptPresenters true
+```
+
+`/fold` switches mode for the session (`OMP_FOLD=tools|all|off` sets the starting mode):
+
+- `/fold tools`: the default above.
+- `/fold all`: edits and writes fold too ("Edited land.sh +5 −1").
+- `/fold off`: omp's normal transcript.
+
+`Ctrl+O` (omp's tool output expansion) draws every block in full again. Details and limits are in
+`specs/03-folded-tool-calls.md` "Findings".
 
 ## Kickoff prompt
 
