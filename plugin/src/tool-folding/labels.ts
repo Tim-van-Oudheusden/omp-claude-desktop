@@ -12,7 +12,7 @@ import {
 	type TranscriptPresentation,
 	unwrapHashlineHeaderPath,
 } from "@oh-my-pi/pi-coding-agent";
-import { truncateToWidth, visibleWidth } from "@oh-my-pi/pi-tui";
+import { truncate, visibleWidth } from "@oh-my-pi/pi-tui/text/width";
 
 /** The home directory as paths spell it, longest first (`/var/home/x` before `/home/x`). */
 export function homeSpellings(): string[] {
@@ -80,7 +80,7 @@ function field(value: unknown, key: string): unknown {
 
 /** `text` cut to `cells` from the right with `…`. */
 function clip(text: string, cells: number): string {
-	return visibleWidth(text) > cells ? truncateToWidth(text, cells) : text;
+	return visibleWidth(text) > cells ? truncate(text, cells) : text;
 }
 
 /** `text` cut to `cells` from the left with `…`, keeping its end (a path's file name). */
@@ -286,7 +286,7 @@ function fit(spans: Span[]): Span[] {
 			out.push(span);
 			room -= width;
 		} else {
-			out.push({ ...span, t: truncateToWidth(span.t, room) });
+			out.push({ ...span, t: truncate(span.t, room) });
 			break;
 		}
 	}

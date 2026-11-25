@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import type { TranscriptBlock, TranscriptPresentation } from "@oh-my-pi/pi-coding-agent";
-import { visibleWidth } from "@oh-my-pi/pi-tui";
+import { visibleWidth } from "@oh-my-pi/pi-tui/text/width";
 import { type FoldMode, Labeler } from "../src/tool-folding/labels";
 
 const labeler = new Labeler(["/var/home/tim", "/home/tim"]);

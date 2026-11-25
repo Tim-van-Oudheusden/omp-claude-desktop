@@ -53,7 +53,31 @@ A second, filled variant, `claude-desktop-filled`, paints the rows with the comp
 from the theme's `userMessageBg`, which in the Claude themes is the user-bubble color, not Claude's
 composer card color; that's why the outline variant is the default.
 
-## API (checked at the installed tag, omp v19.1.1)
+## API at omp v19.2.0
+
+v19.2.0 replaced the API below (release notes, "Breaking Changes"); the 19.1.1 plugin failed to
+load with `Export named 'padding' not found`. The shape now uses the API this spec was first
+drafted against:
+
+- `pi.registerComposerShape(shape: ComposerShape & { label })`; `ComposerShape`,
+  `ComposerChromeContext` and `ComposerRowContext` are types from the `@oh-my-pi/pi-coding-agent`
+  root (`packages/coding-agent/src/ui/styles/composer/shapes.ts`).
+- Shape: `id`, `label`, `description`, `statusAttachment`, `bottomBar`, `bottomBarGap`, `filled`,
+  `sideBorders`, `gutter?`, `paddingX` (a number), `sideWidth(paddingX)`, `top?(cx)`, `row(cx)`,
+  `bottom?(cx)`.
+- Chrome context: `width`, `paddingX`, `theme`, `border(s)`, `accent(s)`, `surface(s)`, `box`,
+  `status?` (`{ content, width }`). The painter (`ui/styles/composer/frame.ts`) passes the same
+  context, status included, to `top`, every `row` and `bottom`, so the bottom-border status needs
+  no workaround (open question 1 is settled).
+- Row context adds `text`, `pad`, `gutter`, `first`, `last`, `overflow`. `imeSafeCursorTail` and
+  `scrollbarThumb` are gone: the caret is the terminal cursor now, so the shape no longer handles
+  either.
+- Width helpers: `truncate` and `visibleWidth` from `@oh-my-pi/pi-tui/text/width`.
+
+Checked 2026-11-25 on omp 19.2.0: `bun test` passes, and the live install (plugin linked)
+draws the card at 100 and 60 columns with the status in the bottom border.
+
+## API at omp v19.1.1 (superseded)
 
 The spec was first written against an API shape (`ComposerShape`, `row(cx)`, `cx.status`) that
 omp v19.1.1 doesn't have. At the tag the same capability is named differently:
